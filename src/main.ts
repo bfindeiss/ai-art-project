@@ -6,7 +6,10 @@ document.body.style.margin = '0';
 document.body.style.overflow = 'hidden';
 document.body.appendChild(container);
 
-const app = new ThinkingRoomApp(container);
+const app = new ThinkingRoomApp(container, {
+  enableMicrophone: true,
+  enableWebcam: true
+});
 app.start();
 
 if (import.meta.hot) {
