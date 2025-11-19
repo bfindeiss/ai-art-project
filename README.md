@@ -74,6 +74,8 @@ Alle Kommandos funktionieren sofort, solange der Fokus auf dem Browserfenster li
 | `V` | Wechselt zum nächsten Visual-Engine-Modul. |
 | `Shift` + `V` | Springt zum vorherigen Visual-Modul. |
 | `1`, `2`, `3` | Direktauswahl von `NeuralFlow`, `SynapseParticles` bzw. `AIGridMorph`. Weitere Module erhalten automatisch die nächste Zahl. |
+| `↑` / `↓` | Erhöht bzw. reduziert die Mikrofon-Sensitivität in 10-%-Schritten. Praktisch, wenn du den Einfluss einer lauten Bühne dämpfen oder zarte Signale betonen möchtest. |
+| `→` / `←` | Verstärkt bzw. schwächt die Webcam/Motion-Sensitivität. Ideal, um Bewegungen im Raum subtiler oder drastischer umzusetzen. |
 
 Bei jedem Wechsel wird der aktive Modus in der Browserkonsole protokolliert (`[ThinkingRoom] Active visual module: …`). Das ist nützlich, um während eines Auftritts zu prüfen, welches System gerade läuft.
 
@@ -85,8 +87,23 @@ Bei jedem Wechsel wird der aktive Modus in der Browserkonsole protokolliert (`[T
 Wechsel die Engines spontan über die Tastatur oder definiere eine feste Reihenfolge, indem du die Tasten `1–3` nutzt. Für automatisierte Abläufe kannst du auch die Sichtbarkeit einzelner Module im Code oder via OSC/Websocket (nicht enthalten) triggern.
 
 ### Sensorik im Einsatz
-- **Mikrofonsteuerung** – Nach dem Aktivieren moduliert das RMS-Niveau z.B. die Partikeldichte. Stelle sicher, dass dein Audiointerface als Standardaufnahmegerät gewählt ist.
-- **Webcam-Motion** – Bewegungen vor der Kamera erzeugen Motion-Intensity-Werte. Ideal für interaktive Installationen; stelle eine gleichmäßige Beleuchtung sicher.
+Sobald die Berechtigungen erteilt sind, laufen Mikrofon- und Webcam-Streams permanent durch Analyse-Pipelines:
+
+#### Mikrofonsteuerung (Audio-Reaktivität)
+1. **Analyser Node** – Ein Web-Audio-Analyser bildet den Frequenzverlauf auf 1024 Bins ab und errechnet daraus einen Mittelwert.
+2. **Normalisierung & Gain** – Der Wert wird auf `0–1` skaliert und durch deine aktuelle Sensitivität (↑/↓) multipliziert.
+3. **Visual-Response** – Das Ergebnis fließt je nach Modul in unterschiedliche Parameter:
+   - *NeuralFlow*: Ribbons werden bei höherem Pegel transparenter/heller und wirken lebendiger.
+   - *SynapseParticles*: Audio verstärkt Drift, Geschwindigkeit und die additive Leuchtkraft der Partikel.
+
+#### Webcam-Motion (Bewegungs-Reaktivität)
+1. **Frame-Differencing** – Ein unsichtbares Video + Canvas vergleicht jedes Bild mit dem Vorgänger und errechnet so Bewegungsenergie.
+2. **Normalisierung & Gain** – Das Motion-Maß wird ebenfalls auf `0–1` abgebildet und über die Pfeiltasten rechts/links feinjustiert.
+3. **Visual-Response** – Die Szene reagiert unmittelbar:
+   - *SynapseParticles*: Partikelgröße steigt mit Bewegung, wodurch Interaktionen sichtbar „aufflackern“.
+   - *AIGridMorph*: Der Shader erhöht die Gitter-Amplitude, sodass das Feld bei Bewegungen stärker pulsiert.
+
+Tipp: Passe während des Auftritts das Verhältnis aus Mikro- und Motion-Sensitivität an, bis die Reaktion zur Raumgröße und Publikumsenergie passt.
 
 ### Tipps für Operator:innen
 - Halte ein Gamepad oder eine kompakte Tastatur bereit, um die oben genannten Shortcuts auch auf der Bühne schnell auszulösen.
