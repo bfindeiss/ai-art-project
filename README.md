@@ -50,6 +50,49 @@ Immersive 360° projection template with evolving AI-inspired neural motifs. Bui
    npm start
    ```
 
+## Benutzerhandbuch
+
+### Schnellstart aus Anwendersicht
+1. **Applikation öffnen** – Starte lokal `npm run dev` oder verwende den bereitgestellten Server. Öffne den angezeigten URL ganzflächig im Browser (idealerweise Vollbild/Kiosk-Modus).
+2. **Leinwand konfigurieren** – Die Projektion passt sich automatisch der Fenstergröße an. Passe `config/projection.json` nur an, wenn du ein anderes Projektions-Setup verwendest.
+3. **Sensorik aktivieren (optional)** – Mikrofon und Webcam sind aus Sicherheitsgründen deaktiviert. Aktiviere sie in `src/main.ts`:
+   ```ts
+   const app = new ThinkingRoomApp(container, {
+     enableMicrophone: true,
+     enableWebcam: true
+   });
+   ```
+   Beim nächsten Laden fragt der Browser nach Berechtigungen. Ohne Freigabe läuft die Szene weiterhin mit generativen Standardparametern.
+4. **Performance prüfen** – Die App regelt die Render-Auflösung dynamisch. Überwache deine FPS im Browser-Devtools-Log (Hinweis bei Pausen/Visual-Wechseln).
+
+### Tastaturkommandos
+Alle Kommandos funktionieren sofort, solange der Fokus auf dem Browserfenster liegt.
+
+| Taste | Aktion |
+| --- | --- |
+| `Space` | Spielt/pausiert die Animation. Während der Pause bleibt das aktuell gerenderte Bild stehen – hilfreich für Kalibrierungen oder Projektor-Feinjustage. |
+| `V` | Wechselt zum nächsten Visual-Engine-Modul. |
+| `Shift` + `V` | Springt zum vorherigen Visual-Modul. |
+| `1`, `2`, `3` | Direktauswahl von `NeuralFlow`, `SynapseParticles` bzw. `AIGridMorph`. Weitere Module erhalten automatisch die nächste Zahl. |
+
+Bei jedem Wechsel wird der aktive Modus in der Browserkonsole protokolliert (`[ThinkingRoom] Active visual module: …`). Das ist nützlich, um während eines Auftritts zu prüfen, welches System gerade läuft.
+
+### Visual-Engines und Einsatzszenarien
+- **NeuralFlow** – Organische Linienribbons für ruhige Ambient-Passagen. Reagiert subtil auf Audiospitzen.
+- **SynapseParticles** – Partikelwolken, die auf Audio- und Bewegungsimpulse anspringen. Ideal für lebhafte Segmente.
+- **AIGridMorph** – Geordnete Gitterformen mit morphenden Patterns für technische Stimmungen.
+
+Wechsel die Engines spontan über die Tastatur oder definiere eine feste Reihenfolge, indem du die Tasten `1–3` nutzt. Für automatisierte Abläufe kannst du auch die Sichtbarkeit einzelner Module im Code oder via OSC/Websocket (nicht enthalten) triggern.
+
+### Sensorik im Einsatz
+- **Mikrofonsteuerung** – Nach dem Aktivieren moduliert das RMS-Niveau z.B. die Partikeldichte. Stelle sicher, dass dein Audiointerface als Standardaufnahmegerät gewählt ist.
+- **Webcam-Motion** – Bewegungen vor der Kamera erzeugen Motion-Intensity-Werte. Ideal für interaktive Installationen; stelle eine gleichmäßige Beleuchtung sicher.
+
+### Tipps für Operator:innen
+- Halte ein Gamepad oder eine kompakte Tastatur bereit, um die oben genannten Shortcuts auch auf der Bühne schnell auszulösen.
+- Nutze den Pause-Modus (`Space`), um Projektoren zu synchronisieren oder Besucher:innen einzelne Frames zu zeigen.
+- Dokumentiere dein bevorzugtes Setup (z.B. aktive Module, Farbschemata) in einem eigenen Preset-Script, damit du es später reproduzieren kannst.
+
 ### Interaction toggles
 Permissions are disabled by default. Enable them by instantiating the app with flags (edit `src/main.ts`):
 ```ts

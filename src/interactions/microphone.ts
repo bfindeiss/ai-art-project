@@ -1,6 +1,6 @@
 export class MicrophoneController {
   private analyser?: AnalyserNode;
-  private dataArray?: Uint8Array;
+  private dataArray?: Uint8Array<ArrayBuffer>;
   private enabled = false;
 
   async init(): Promise<void> {
@@ -12,7 +12,8 @@ export class MicrophoneController {
       this.analyser = audioContext.createAnalyser();
       this.analyser.fftSize = 1024;
       source.connect(this.analyser);
-      this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+      const buffer = new ArrayBuffer(this.analyser.frequencyBinCount);
+      this.dataArray = new Uint8Array(buffer) as Uint8Array<ArrayBuffer>;
       this.enabled = true;
     } catch (error) {
       console.warn('[Mic] Permission denied or unavailable', error);
