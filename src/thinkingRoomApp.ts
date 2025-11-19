@@ -32,6 +32,9 @@ export class ThinkingRoomApp {
   private handleResize = () => this.onResize();
   private handleKeyDown = (event: KeyboardEvent) => this.onKeyDown(event);
   private isPaused = false;
+  private audioSensitivity = 1;
+  private motionSensitivity = 1;
+  private readonly sensitivityStep = 0.1;
 
   constructor(container: HTMLElement, options: ThinkingRoomOptions = {}) {
     this.container = container;
@@ -80,11 +83,11 @@ export class ThinkingRoomApp {
       this.visualManager.update(delta, this.elapsed);
 
       if (this.options.enableMicrophone) {
-        const audioLevel = this.mic.getLevel();
+        const audioLevel = this.getScaledAudioLevel();
         this.visualManager.setAudioLevel(audioLevel);
       }
       if (this.options.enableWebcam) {
-        const motion = this.webcam.getMotion();
+        const motion = this.getScaledMotionLevel();
         this.visualManager.setMotionIntensity(motion);
       }
 
@@ -163,6 +166,22 @@ export class ThinkingRoomApp {
         }
         this.announceActiveVisual();
         break;
+      case 'ArrowUp':
+        event.preventDefault();
+        this.adjustAudioSensitivity(this.sensitivityStep);
+        break;
+      case 'ArrowDown':
+        event.preventDefault();
+        this.adjustAudioSensitivity(-this.sensitivityStep);
+        break;
+      case 'ArrowRight':
+        event.preventDefault();
+        this.adjustMotionSensitivity(this.sensitivityStep);
+        break;
+      case 'ArrowLeft':
+        event.preventDefault();
+        this.adjustMotionSensitivity(-this.sensitivityStep);
+        break;
       case 'Digit1':
       case 'Digit2':
       case 'Digit3': {
@@ -189,6 +208,30 @@ export class ThinkingRoomApp {
     if (active) {
       console.info(`[ThinkingRoom] Active visual module: ${active}`);
     }
+  }
+
+  private getScaledAudioLevel(): number {
+    const level = this.mic.getLevel() * this.audioSensitivity;
+    return THREE.MathUtils.clamp(level, 0, 1);
+  }
+
+  private getScaledMotionLevel(): number {
+    const level = this.webcam.getMotion() * this.motionSensitivity;
+    return THREE.MathUtils.clamp(level, 0, 1);
+  }
+
+  private adjustAudioSensitivity(delta: number): void {
+    this.audioSensitivity = THREE.MathUtils.clamp(this.audioSensitivity + delta, 0, 3);
+    console.info(
+      `[ThinkingRoom] Audio sensitivity ${(this.audioSensitivity * 100).toFixed(0)}%`
+    );
+  }
+
+  private adjustMotionSensitivity(delta: number): void {
+    this.motionSensitivity = THREE.MathUtils.clamp(this.motionSensitivity + delta, 0, 3);
+    console.info(
+      `[ThinkingRoom] Motion sensitivity ${(this.motionSensitivity * 100).toFixed(0)}%`
+    );
   }
 
   dispose(): void {
