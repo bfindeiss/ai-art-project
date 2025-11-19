@@ -54,7 +54,8 @@ export class NeuralFlow implements VisualModule {
       }
       const buffer = ribbon.mesh.geometry.getAttribute('position');
       buffer.needsUpdate = true;
-      ribbon.mesh.material.opacity = THREE.MathUtils.lerp(0.2, 0.6, this.audioLevel);
+      const material = ribbon.mesh.material as THREE.LineBasicMaterial;
+      material.opacity = THREE.MathUtils.lerp(0.2, 0.6, this.audioLevel);
     });
   }
 

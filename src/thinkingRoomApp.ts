@@ -21,6 +21,7 @@ export class ThinkingRoomApp {
   private background = createGradientBackground(60);
   private visualManager: VisualManager;
   private clock = new THREE.Clock();
+  private elapsed = 0;
   private animationId?: number;
   private container: HTMLElement;
   private paletteIndex = 0;
@@ -29,6 +30,8 @@ export class ThinkingRoomApp {
   private fpsSamples: number[] = [];
   private options: ThinkingRoomOptions;
   private handleResize = () => this.onResize();
+  private handleKeyDown = (event: KeyboardEvent) => this.onKeyDown(event);
+  private isPaused = false;
 
   constructor(container: HTMLElement, options: ThinkingRoomOptions = {}) {
     this.container = container;
@@ -51,6 +54,7 @@ export class ThinkingRoomApp {
     this.visualManager.init(systemConfig.maxParticles);
 
     window.addEventListener('resize', this.handleResize);
+    window.addEventListener('keydown', this.handleKeyDown);
     this.onResize();
 
     if (options.enableMicrophone) {
@@ -69,25 +73,27 @@ export class ThinkingRoomApp {
   private animate = () => {
     this.animationId = requestAnimationFrame(this.animate);
     const delta = this.clock.getDelta();
-    const elapsed = this.clock.elapsedTime;
 
-    this.updateTheme(elapsed);
-    this.visualManager.update(delta, elapsed);
+    if (!this.isPaused) {
+      this.elapsed += delta;
+      this.updateTheme(this.elapsed);
+      this.visualManager.update(delta, this.elapsed);
 
-    if (this.options.enableMicrophone) {
-      const audioLevel = this.mic.getLevel();
-      this.visualManager.setAudioLevel(audioLevel);
-    }
-    if (this.options.enableWebcam) {
-      const motion = this.webcam.getMotion();
-      this.visualManager.setMotionIntensity(motion);
+      if (this.options.enableMicrophone) {
+        const audioLevel = this.mic.getLevel();
+        this.visualManager.setAudioLevel(audioLevel);
+      }
+      if (this.options.enableWebcam) {
+        const motion = this.webcam.getMotion();
+        this.visualManager.setMotionIntensity(motion);
+      }
+
+      this.trackFps(delta);
     }
 
     this.renderer.clear();
     this.renderer.render(this.scene, this.camera);
     this.renderer.render(this.overlayScene, this.overlayCamera);
-
-    this.trackFps(delta);
   };
 
   private updateTheme(elapsed: number): void {
@@ -138,9 +144,57 @@ export class ThinkingRoomApp {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
+  private onKeyDown(event: KeyboardEvent): void {
+    if (['INPUT', 'TEXTAREA'].includes((event.target as HTMLElement)?.tagName)) {
+      return;
+    }
+
+    switch (event.code) {
+      case 'Space':
+        event.preventDefault();
+        this.togglePause();
+        break;
+      case 'KeyV':
+        event.preventDefault();
+        if (event.shiftKey) {
+          this.visualManager.previousModule();
+        } else {
+          this.visualManager.nextModule();
+        }
+        this.announceActiveVisual();
+        break;
+      case 'Digit1':
+      case 'Digit2':
+      case 'Digit3': {
+        event.preventDefault();
+        const index = Number(event.code.replace('Digit', '')) - 1;
+        this.visualManager.selectModule(index);
+        this.announceActiveVisual();
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
+  private togglePause(): void {
+    this.isPaused = !this.isPaused;
+    if (!this.isPaused) {
+      this.clock.getDelta();
+    }
+  }
+
+  private announceActiveVisual(): void {
+    const active = this.visualManager.getActiveModuleName();
+    if (active) {
+      console.info(`[ThinkingRoom] Active visual module: ${active}`);
+    }
+  }
+
   dispose(): void {
     cancelAnimationFrame(this.animationId!);
     window.removeEventListener('resize', this.handleResize);
+    window.removeEventListener('keydown', this.handleKeyDown);
     this.visualManager.dispose();
     this.renderer.dispose();
   }

@@ -4,39 +4,79 @@ import { NeuralFlow } from './NeuralFlow';
 import { SynapseParticles } from './SynapseParticles';
 import { AIGridMorph } from './AIGridMorph';
 
+interface ManagedVisual {
+  name: string;
+  module: VisualModule;
+}
+
 export class VisualManager {
-  private modules: VisualModule[] = [];
+  private modules: ManagedVisual[] = [];
   private group = new THREE.Group();
+  private activeIndex = 0;
 
   constructor(private scene: THREE.Scene) {}
 
   init(maxParticles: number): void {
     this.modules = [
-      new NeuralFlow(maxParticles * 0.1),
-      new SynapseParticles(maxParticles * 0.6),
-      new AIGridMorph()
+      { name: 'NeuralFlow', module: new NeuralFlow(maxParticles * 0.1) },
+      { name: 'SynapseParticles', module: new SynapseParticles(maxParticles * 0.6) },
+      { name: 'AIGridMorph', module: new AIGridMorph() }
     ];
 
-    this.modules.forEach((module) => this.group.add(module.object3d));
+    this.modules.forEach(({ module }) => {
+      module.object3d.visible = false;
+      this.group.add(module.object3d);
+    });
     this.scene.add(this.group);
+    this.setActiveModule(0);
   }
 
   update(delta: number, elapsed: number): void {
-    for (const module of this.modules) {
-      module.update(delta, elapsed);
-    }
+    const active = this.modules[this.activeIndex];
+    if (!active) return;
+    active.module.update(delta, elapsed);
+  }
+
+  private setActiveModule(index: number): void {
+    if (!this.modules.length) return;
+    const clamped = THREE.MathUtils.euclideanModulo(index, this.modules.length);
+    this.modules.forEach(({ module }, idx) => {
+      module.object3d.visible = idx === clamped;
+    });
+    this.activeIndex = clamped;
+  }
+
+  nextModule(): string {
+    this.setActiveModule(this.activeIndex + 1);
+    return this.getActiveModuleName();
+  }
+
+  previousModule(): string {
+    this.setActiveModule(this.activeIndex - 1);
+    return this.getActiveModuleName();
+  }
+
+  selectModule(index: number): string {
+    this.setActiveModule(index);
+    return this.getActiveModuleName();
+  }
+
+  getModuleNames(): string[] {
+    return this.modules.map((entry) => entry.name);
+  }
+
+  getActiveModuleName(): string {
+    return this.modules[this.activeIndex]?.name ?? '';
   }
 
   setAudioLevel(level: number): void {
-    for (const module of this.modules) {
-      module.setAudioLevel?.(level);
-    }
+    const active = this.modules[this.activeIndex];
+    active?.module.setAudioLevel?.(level);
   }
 
   setMotionIntensity(level: number): void {
-    for (const module of this.modules) {
-      module.setMotionIntensity?.(level);
-    }
+    const active = this.modules[this.activeIndex];
+    active?.module.setMotionIntensity?.(level);
   }
 
   dispose(): void {
