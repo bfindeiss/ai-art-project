@@ -182,16 +182,19 @@ export class ThinkingRoomApp {
         event.preventDefault();
         this.adjustMotionSensitivity(-this.sensitivityStep);
         break;
-      case 'Digit1':
-      case 'Digit2':
-      case 'Digit3': {
-        event.preventDefault();
-        const index = Number(event.code.replace('Digit', '')) - 1;
-        this.visualManager.selectModule(index);
-        this.announceActiveVisual();
-        break;
-      }
       default:
+        if (event.code.startsWith('Digit')) {
+          const digit = Number(event.code.replace('Digit', ''));
+          if (!Number.isNaN(digit)) {
+            const index = digit - 1;
+            if (index >= 0 && index < this.visualManager.getModuleNames().length) {
+              event.preventDefault();
+              this.visualManager.selectModule(index);
+              this.announceActiveVisual();
+              break;
+            }
+          }
+        }
         break;
     }
   }

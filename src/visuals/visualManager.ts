@@ -3,6 +3,8 @@ import { VisualModule } from './base';
 import { NeuralFlow } from './NeuralFlow';
 import { SynapseParticles } from './SynapseParticles';
 import { AIGridMorph } from './AIGridMorph';
+import { PulseRings } from './PulseRings';
+import { AuroraVeil } from './AuroraVeil';
 
 interface ManagedVisual {
   name: string;
@@ -20,7 +22,9 @@ export class VisualManager {
     this.modules = [
       { name: 'NeuralFlow', module: new NeuralFlow(maxParticles * 0.1) },
       { name: 'SynapseParticles', module: new SynapseParticles(maxParticles * 0.6) },
-      { name: 'AIGridMorph', module: new AIGridMorph() }
+      { name: 'AIGridMorph', module: new AIGridMorph() },
+      { name: 'PulseRings', module: new PulseRings() },
+      { name: 'AuroraVeil', module: new AuroraVeil() }
     ];
 
     this.modules.forEach(({ module }) => {
