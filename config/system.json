@@ -1,0 +1,6 @@
+{
+  "maxParticles": 20000,
+  "resolutionScale": 0.85,
+  "dynamicResolution": true,
+  "minFps": 40
+}

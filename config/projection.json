@@ -1,0 +1,6 @@
+{
+  "projectors": 4,
+  "overlapPx": 120,
+  "mode": "four-wall",
+  "gamma": 2.2
+}

@@ -1,0 +1,17 @@
+{
+  "palettes": [
+    {
+      "name": "Deep Thought",
+      "colors": ["#0b0f1f", "#243b55", "#141e30", "#00c6ff"]
+    },
+    {
+      "name": "Neural Dawn",
+      "colors": ["#2c003e", "#512b58", "#7f5a83", "#feb47b"]
+    },
+    {
+      "name": "Signal Bloom",
+      "colors": ["#051937", "#004d7a", "#008793", "#00bf72", "#a8eb12"]
+    }
+  ],
+  "transitionSeconds": 90
+}
