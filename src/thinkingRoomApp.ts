@@ -5,6 +5,7 @@ import { projectionConfig, systemConfig, themeConfig } from './config';
 import { EdgeBlendOverlay } from './edgeBlendOverlay';
 import { MicrophoneController } from './interactions/microphone';
 import { WebcamMotionController } from './interactions/webcam';
+import { SensorImprint } from './visuals/SensorImprint';
 
 interface ThinkingRoomOptions {
   enableMicrophone?: boolean;
@@ -19,6 +20,7 @@ export class ThinkingRoomApp {
   private overlayCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   private edgeOverlay = new EdgeBlendOverlay();
   private background = createGradientBackground(60);
+  private sensorImprint = new SensorImprint();
   private visualManager: VisualManager;
   private clock = new THREE.Clock();
   private elapsed = 0;
@@ -27,6 +29,7 @@ export class ThinkingRoomApp {
   private paletteIndex = 0;
   private mic = new MicrophoneController();
   private webcam = new WebcamMotionController();
+  private webcamTexture?: THREE.VideoTexture;
   private fpsSamples: number[] = [];
   private options: ThinkingRoomOptions;
   private handleResize = () => this.onResize();
@@ -53,6 +56,7 @@ export class ThinkingRoomApp {
     this.overlayScene.add(this.edgeOverlay.object3d);
 
     this.scene.add(this.background);
+    this.scene.add(this.sensorImprint.object3d);
     this.visualManager = new VisualManager(this.scene);
     this.visualManager.init(systemConfig.maxParticles);
 
@@ -64,7 +68,14 @@ export class ThinkingRoomApp {
       this.mic.init();
     }
     if (options.enableWebcam) {
-      this.webcam.init();
+      this.webcam.init().then(() => {
+        const videoEl = this.webcam.getVideoElement();
+        if (videoEl) {
+          this.webcamTexture = new THREE.VideoTexture(videoEl);
+          this.webcamTexture.colorSpace = THREE.SRGBColorSpace;
+          this.sensorImprint.setVideoTexture(this.webcamTexture);
+        }
+      });
     }
   }
 
@@ -85,13 +96,17 @@ export class ThinkingRoomApp {
       if (this.options.enableMicrophone) {
         const audioLevel = this.getScaledAudioLevel();
         this.visualManager.setAudioLevel(audioLevel);
+        this.sensorImprint.setAudioLevel(audioLevel);
       }
       if (this.options.enableWebcam) {
         const motion = this.getScaledMotionLevel();
         this.visualManager.setMotionIntensity(motion);
+        this.sensorImprint.setMotionLevel(motion);
       }
 
       this.trackFps(delta);
+
+      this.sensorImprint.update(delta, this.elapsed);
     }
 
     this.renderer.clear();

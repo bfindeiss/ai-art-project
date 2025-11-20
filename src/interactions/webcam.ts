@@ -40,4 +40,8 @@ export class WebcamMotionController {
     const normalized = Math.min(1, diff / (frame.data.length * 255 * 0.2));
     return normalized;
   }
+
+  getVideoElement(): HTMLVideoElement | undefined {
+    return this.video;
+  }
 }
