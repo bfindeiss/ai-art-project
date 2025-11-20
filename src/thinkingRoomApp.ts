@@ -6,6 +6,7 @@ import { EdgeBlendOverlay } from './edgeBlendOverlay';
 import { MicrophoneController } from './interactions/microphone';
 import { WebcamMotionController } from './interactions/webcam';
 import { SensorImprint } from './visuals/SensorImprint';
+import { PersonOcclusionMask } from './visuals/PersonOcclusionMask';
 import { OnScreenDisplay } from './onScreenDisplay';
 
 interface ThinkingRoomOptions {
@@ -22,6 +23,7 @@ export class ThinkingRoomApp {
   private edgeOverlay = new EdgeBlendOverlay();
   private background = createGradientBackground(60);
   private sensorImprint = new SensorImprint();
+  private occlusionMask = new PersonOcclusionMask();
   private visualManager: VisualManager;
   private clock = new THREE.Clock();
   private elapsed = 0;
@@ -55,6 +57,7 @@ export class ThinkingRoomApp {
     this.updatePixelRatio(window.devicePixelRatio * systemConfig.resolutionScale);
     container.appendChild(this.renderer.domElement);
 
+    this.overlayScene.add(this.occlusionMask.object3d);
     this.overlayScene.add(this.edgeOverlay.object3d);
 
     this.scene.add(this.background);
@@ -76,6 +79,7 @@ export class ThinkingRoomApp {
           this.webcamTexture = new THREE.VideoTexture(videoEl);
           this.webcamTexture.colorSpace = THREE.SRGBColorSpace;
           this.sensorImprint.setVideoTexture(this.webcamTexture);
+          this.occlusionMask.setVideoTexture(this.webcamTexture);
         }
       });
     }
@@ -104,6 +108,7 @@ export class ThinkingRoomApp {
         const motion = this.getScaledMotionLevel();
         this.visualManager.setMotionIntensity(motion);
         this.sensorImprint.setMotionLevel(motion);
+        this.occlusionMask.update(this.elapsed);
       }
 
       this.trackFps(delta);
