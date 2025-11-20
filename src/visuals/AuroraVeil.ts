@@ -20,8 +20,8 @@ export class AuroraVeil implements VisualModule {
         time: { value: 0 },
         audio: { value: 0 },
         motion: { value: 0 },
-        colorA: { value: new THREE.Color('#3fe4ff') },
-        colorB: { value: new THREE.Color('#ff7cdb') }
+        colorA: { value: new THREE.Color('#19f2ff') },
+        colorB: { value: new THREE.Color('#f6ad3c') }
       },
       vertexShader: /* glsl */ `
         uniform float time;
