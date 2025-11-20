@@ -1,11 +1,11 @@
 # The Thinking Room
 
-Immersive 360°-Projektionsvorlage mit sich entwickelnden, KI-inspirierten neuronalen Motiven. Gebaut mit Three.js + Vite für schnellen Einsatz in Multi-Beamer-Domes oder rechteckigen Räumen.
+Immersive 360°-Projektionsvorlage mit sich entwickelnden, KI-inspirierten neuronalen Motiven. Gebaut mit Three.js + Vite für schnellen Einsatz in Multi-Beamer-Domes oder rechteckigen Räumen – egal ob direkt vor der Laptop-Webcam oder riesengroß an der Wand projiziert.
 
 ## Features
 - Panoramischer Shader-Hintergrund für equirektangulare oder vierwandige Projektionen.
 - Fünf modulare Visual-Systeme (`NeuralFlow`, `SynapseParticles`, `AIGridMorph`, `PulseRings`, `AuroraVeil`).
-- Direkte Sensorik-Verknüpfung: Mikrofon- und Webcam-Signale beeinflussen Szenenparameter und erscheinen als schemenhafte Overlays.
+- Direkte Sensorik-Verknüpfung: Mikrofon- und Webcam-Signale beeinflussen Szenenparameter und erscheinen als schemenhafte Overlays (standardmäßig aktiv).
 - Konfigurierbare Projektor-Überlappungen, Farbwelten und Performance-Budgets.
 - Schlanker Vite-Devserver plus Express-Server für den Produktivbetrieb.
 
@@ -54,15 +54,8 @@ Immersive 360°-Projektionsvorlage mit sich entwickelnden, KI-inspirierten neuro
 
 ### Schnellstart aus Anwendersicht
 1. **Applikation öffnen** – Starte lokal `npm run dev` oder nutze den bereitgestellten Server. Öffne die angezeigte URL bildschirmfüllend im Browser (idealerweise Vollbild/Kiosk-Modus).
-2. **Leinwand konfigurieren** – Die Projektion passt sich automatisch der Fenstergröße an. Passe `config/projection.json` nur an, wenn du ein anderes Projektions-Setup verwendest.
-3. **Sensorik aktivieren (optional)** – Mikrofon und Webcam sind aus Sicherheitsgründen deaktiviert. Aktiviere sie in `src/main.ts`:
-   ```ts
-   const app = new ThinkingRoomApp(container, {
-     enableMicrophone: true,
-     enableWebcam: true
-   });
-   ```
-   Beim nächsten Laden fragt der Browser nach Berechtigungen. Ohne Freigabe läuft die Szene mit generativen Standardparametern weiter.
+2. **Sensorik bestätigen** – Standardmäßig fragt die App nach Mikrofon- und Webcam-Zugriff. Lehnst du ab, laufen die generativen Defaults weiter, die Overlays bleiben dann dunkel.
+3. **Leinwand konfigurieren** – Die Projektion passt sich automatisch an. Nur wenn du von der Auto-Erkennung abweichen willst, passe `config/projection.json` oder nutze die URL-Parameter (siehe unten).
 4. **Performance prüfen** – Die App regelt die Render-Auflösung dynamisch. Überwache die FPS im Browser-Devtools-Log (Hinweise erscheinen bei Pausen/Visual-Wechseln).
 
 ### Tastaturkommandos
@@ -89,7 +82,16 @@ Bei jedem Wechsel wird der aktive Modus in der Browserkonsole protokolliert (`[T
 Wechsle die Engines spontan über die Tastatur oder definiere eine feste Reihenfolge, indem du die Zifferntasten nutzt. Für automatisierte Abläufe kannst du die Sichtbarkeit einzelner Module im Code oder via OSC/Websocket (nicht enthalten) steuern.
 
 ### Sensorik im Einsatz
-Sobald die Berechtigungen erteilt sind, laufen Mikrofon- und Webcam-Streams permanent durch Analyse-Pipelines. Zusätzlich werden sie nun visuell in Szene gesetzt:
+Mikrofon- und Webcam-Streams werden direkt beim Start angefragt. Falls du sie abschalten möchtest (z. B. im Museum ohne Kamera), übergib Flags beim Instanziieren in `src/main.ts`:
+
+```ts
+const app = new ThinkingRoomApp(container, {
+  enableMicrophone: false,
+  enableWebcam: false
+});
+```
+
+Sobald die Berechtigungen erteilt sind, laufen die Streams permanent durch Analyse-Pipelines. Zusätzlich werden sie nun visuell in Szene gesetzt:
 
 #### Mikrofonsteuerung (Audio-Reaktivität)
 1. **Analyser Node** – Ein Web-Audio-Analyser bildet den Frequenzverlauf auf 1024 Bins ab und errechnet daraus einen Mittelwert.
@@ -116,8 +118,22 @@ Tipp: Passe während des Auftritts das Verhältnis aus Mikro- und Motion-Sensiti
 - Nutze den Pause-Modus (`Space`), um Projektoren zu synchronisieren oder Besucher:innen einzelne Frames zu zeigen.
 - Dokumentiere dein bevorzugtes Setup (z. B. aktive Module, Farbschemata) in einem eigenen Preset-Script, damit du es später reproduzieren kannst.
 
-### Interaction Toggles
-Berechtigungen sind standardmäßig deaktiviert. Aktiviere sie durch Flags beim Instanziieren (siehe `src/main.ts`). Beide Controller funktionieren weiterhin, wenn Hardware fehlt – dann greifen nur die generativen Defaults.
+### Interaction Toggles & On-Screen-Display
+Die On-Screen-Display-Tafel blendet kurze Hinweise ein, wenn du Sensitivitäten änderst. Beide Controller liefern `0` zurück, wenn Hardware oder Berechtigungen fehlen – so bleibt die App lauffähig, auch wenn du Sensorik deaktivierst.
+
+### Projektion & Edge Blending
+Der Projektionsmodus wird automatisch gewählt:
+
+- **Laptop / Einzelscreen** – schaltet auf `single` (klassische Perspective-Cam ohne Blending) wenn die Fensterfläche klein ist.
+- **Wand / Mehr-Projektor** – schaltet auf `four-wall` wenn das Browserfenster groß genug ist **und** `config/projection.json` mehr als einen Projektor angibt. Dann aktiviert sich das Edge-Blend-Overlay automatisch.
+
+Du kannst den Modus jederzeit über URL-Parameter überschreiben:
+
+- `?projection=single` – erzwingt Laptop-Modus.
+- `?projection=four-wall` – erzwingt Mehr-Projektor-Modus inklusive Blend-Overlay.
+- `?projection=auto` – stellt die Auto-Erkennung wieder her (Default).
+
+Feinjustiere das Edge-Blending über `config/projection.json` (`projectors`, `overlapPx`, `gamma`). Keystone/Warping erledigst du extern (Hardware oder GPU-Warp-Tools).
 
 ## Neue Visual-Module hinzufügen
 1. Datei in `src/visuals/MyVisual.ts` anlegen, die das `VisualModule`-Interface implementiert.

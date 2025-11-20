@@ -4,7 +4,7 @@ import { projectionConfig } from './config';
 export class EdgeBlendOverlay {
   private mesh: THREE.Mesh;
 
-  constructor() {
+  constructor(enabled: boolean) {
     const geometry = new THREE.PlaneGeometry(2, 2);
     const material = new THREE.ShaderMaterial({
       vertexShader: /* glsl */ `
@@ -24,7 +24,7 @@ export class EdgeBlendOverlay {
         void main() {
           float blendWidth = overlap / 1920.0; // assume HD base, scale accordingly
           float left = smoothstep(0.0, blendWidth, vUv.x);
-          float right = smoothstep(1.0, 1.0 - blendWidth, vUv.x);
+          float right = smoothstep(1.0 - blendWidth, 1.0, vUv.x);
           float fade = left * right;
           vec3 tint = vec3(pow(fade, 1.0 / gamma));
           float projectorBands = floor(vUv.x * projectors) / projectors;
@@ -34,13 +34,14 @@ export class EdgeBlendOverlay {
       `,
       transparent: true,
       uniforms: {
-        projectors: { value: projectionConfig.projectors },
+        projectors: { value: Math.max(1, projectionConfig.projectors) },
         overlap: { value: projectionConfig.overlapPx },
         gamma: { value: projectionConfig.gamma }
       }
     });
 
     this.mesh = new THREE.Mesh(geometry, material);
+    this.mesh.visible = enabled;
   }
 
   get object3d(): THREE.Mesh {
