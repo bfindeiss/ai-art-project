@@ -30,6 +30,7 @@ export class ThinkingRoomApp {
   private animationId?: number;
   private container: HTMLElement;
   private paletteIndex = 0;
+  private environmentBlend = 0;
   private mic = new MicrophoneController();
   private webcam = new WebcamMotionController();
   private webcamTexture?: THREE.VideoTexture;
@@ -99,18 +100,19 @@ export class ThinkingRoomApp {
 
     if (!this.isPaused) {
       this.elapsed += delta;
-      this.updateTheme(this.elapsed);
+      const audioLevel = this.options.enableMicrophone ? this.getScaledAudioLevel() : 0;
+      const motionLevel = this.options.enableWebcam ? this.getScaledMotionLevel() : 0;
+
+      this.updateTheme(this.elapsed, delta, audioLevel, motionLevel);
       this.visualManager.update(delta, this.elapsed);
 
       if (this.options.enableMicrophone) {
-        const audioLevel = this.getScaledAudioLevel();
         this.visualManager.setAudioLevel(audioLevel);
         this.sensorImprint.setAudioLevel(audioLevel);
       }
       if (this.options.enableWebcam) {
-        const motion = this.getScaledMotionLevel();
-        this.visualManager.setMotionIntensity(motion);
-        this.sensorImprint.setMotionLevel(motion);
+        this.visualManager.setMotionIntensity(motionLevel);
+        this.sensorImprint.setMotionLevel(motionLevel);
         this.occlusionMask.update(this.elapsed);
       }
 
@@ -124,7 +126,7 @@ export class ThinkingRoomApp {
     this.renderer.render(this.overlayScene, this.overlayCamera);
   };
 
-  private updateTheme(elapsed: number): void {
+  private updateTheme(elapsed: number, delta: number, audioLevel: number, motionLevel: number): void {
     const palette = themeConfig.palettes[this.paletteIndex];
     const nextPalette = themeConfig.palettes[(this.paletteIndex + 1) % themeConfig.palettes.length];
     const duration = themeConfig.transitionSeconds;
@@ -135,11 +137,37 @@ export class ThinkingRoomApp {
     const colorA = new THREE.Color(palette.colors[0]);
     const colorB = new THREE.Color(palette.colors[1]);
     const colorC = new THREE.Color(nextPalette.colors[2] ?? palette.colors[2]);
+
+    this.updateEnvironmentBlend(delta, audioLevel, motionLevel);
+
+    const moodA = this.applyMoodToColor(colorA, this.environmentBlend);
+    const moodB = this.applyMoodToColor(colorB, this.environmentBlend);
+    const moodC = this.applyMoodToColor(colorC, this.environmentBlend);
     const uniforms = (this.background.material as THREE.ShaderMaterial).uniforms;
-    uniforms.colorA.value.lerp(colorA, 0.05);
-    uniforms.colorB.value.lerp(colorB, 0.05);
-    uniforms.colorC.value.lerp(colorC, 0.05);
+    uniforms.colorA.value.lerp(moodA, 0.05);
+    uniforms.colorB.value.lerp(moodB, 0.05);
+    uniforms.colorC.value.lerp(moodC, 0.05);
     uniforms.time.value = elapsed;
+  }
+
+  private updateEnvironmentBlend(delta: number, audioLevel: number, motionLevel: number): void {
+    const targetIntensity = THREE.MathUtils.clamp(audioLevel * 0.6 + motionLevel * 0.4, 0, 1);
+    const smoothing = 1 - Math.exp(-delta * 3);
+    this.environmentBlend = THREE.MathUtils.lerp(this.environmentBlend, targetIntensity, smoothing);
+  }
+
+  private applyMoodToColor(color: THREE.Color, intensity: number): THREE.Color {
+    const hsl = { h: 0, s: 0, l: 0 };
+    color.getHSL(hsl);
+    const calmerLightness = Math.max(0.08, hsl.l * 0.4);
+    const vibrantLightness = Math.min(0.9, hsl.l * 1.35 + 0.05);
+    const calmerSaturation = hsl.s * 0.65;
+    const vibrantSaturation = Math.min(1, hsl.s * 1.2 + 0.05);
+
+    const targetLightness = THREE.MathUtils.lerp(calmerLightness, vibrantLightness, intensity);
+    const targetSaturation = THREE.MathUtils.lerp(calmerSaturation, vibrantSaturation, intensity);
+
+    return new THREE.Color().setHSL(hsl.h, targetSaturation, targetLightness);
   }
 
   private trackFps(delta: number): void {
