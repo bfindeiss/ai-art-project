@@ -5,6 +5,7 @@ import { SynapseParticles } from './SynapseParticles';
 import { AIGridMorph } from './AIGridMorph';
 import { PulseRings } from './PulseRings';
 import { AuroraVeil } from './AuroraVeil';
+import { SensorSpectrum } from './SensorSpectrum';
 
 interface ManagedVisual {
   name: string;
@@ -24,7 +25,8 @@ export class VisualManager {
       { name: 'SynapseParticles', module: new SynapseParticles(maxParticles * 0.6) },
       { name: 'AIGridMorph', module: new AIGridMorph() },
       { name: 'PulseRings', module: new PulseRings() },
-      { name: 'AuroraVeil', module: new AuroraVeil() }
+      { name: 'AuroraVeil', module: new AuroraVeil() },
+      { name: 'SensorSpectrum', module: new SensorSpectrum() }
     ];
 
     this.modules.forEach(({ module }) => {
