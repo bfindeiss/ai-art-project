@@ -20,7 +20,7 @@ export class ThinkingRoomApp {
   private camera: THREE.PerspectiveCamera;
   private overlayScene = new THREE.Scene();
   private overlayCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-  private edgeOverlay = new EdgeBlendOverlay();
+  private edgeOverlay: EdgeBlendOverlay;
   private background = createGradientBackground(60);
   private sensorImprint = new SensorImprint();
   private occlusionMask = new PersonOcclusionMask();
@@ -46,8 +46,9 @@ export class ThinkingRoomApp {
   constructor(container: HTMLElement, options: ThinkingRoomOptions = {}) {
     this.container = container;
     this.options = options;
+    const projectionMode = this.getProjectionMode();
     const aspect = window.innerWidth / window.innerHeight;
-    const fov = projectionConfig.mode === 'four-wall' ? 90 : 75;
+    const fov = projectionMode === 'four-wall' ? 90 : 75;
     this.camera = new THREE.PerspectiveCamera(fov, aspect, 0.1, 200);
     this.camera.position.set(0, 0, 0);
 
@@ -57,6 +58,8 @@ export class ThinkingRoomApp {
     this.updatePixelRatio(window.devicePixelRatio * systemConfig.resolutionScale);
     container.appendChild(this.renderer.domElement);
 
+    const useEdgeBlend = projectionMode === 'four-wall' && projectionConfig.projectors > 1;
+    this.edgeOverlay = new EdgeBlendOverlay(useEdgeBlend);
     this.overlayScene.add(this.occlusionMask.object3d);
     this.overlayScene.add(this.edgeOverlay.object3d);
 
@@ -161,6 +164,19 @@ export class ThinkingRoomApp {
     const clamped = Math.max(0.5, Math.min(window.devicePixelRatio, ratio));
     this.renderer.setPixelRatio(clamped);
     this.renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  private getProjectionMode(): 'single' | 'four-wall' {
+    const params = new URLSearchParams(window.location.search);
+    const urlOverride = params.get('projection');
+    const candidate = (urlOverride as 'single' | 'four-wall' | 'auto' | null) ?? projectionConfig.mode;
+
+    if (candidate === 'four-wall') return 'four-wall';
+    if (candidate === 'single') return 'single';
+
+    const wideEnough = window.innerWidth >= 2400 || window.innerHeight >= 1400;
+    const multipleProjectors = projectionConfig.projectors > 1;
+    return wideEnough && multipleProjectors ? 'four-wall' : 'single';
   }
 
   private onResize(): void {
