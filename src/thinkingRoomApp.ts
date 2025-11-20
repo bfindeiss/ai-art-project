@@ -7,6 +7,7 @@ import { MicrophoneController } from './interactions/microphone';
 import { WebcamMotionController } from './interactions/webcam';
 import { SensorImprint } from './visuals/SensorImprint';
 import { PersonOcclusionMask } from './visuals/PersonOcclusionMask';
+import { OnScreenDisplay } from './onScreenDisplay';
 
 interface ThinkingRoomOptions {
   enableMicrophone?: boolean;
@@ -40,6 +41,7 @@ export class ThinkingRoomApp {
   private audioSensitivity = 1;
   private motionSensitivity = 1;
   private readonly sensitivityStep = 0.1;
+  private osd = new OnScreenDisplay();
 
   constructor(container: HTMLElement, options: ThinkingRoomOptions = {}) {
     this.container = container;
@@ -248,6 +250,7 @@ export class ThinkingRoomApp {
     console.info(
       `[ThinkingRoom] Audio sensitivity ${(this.audioSensitivity * 100).toFixed(0)}%`
     );
+    this.showActiveOptions();
   }
 
   private adjustMotionSensitivity(delta: number): void {
@@ -255,6 +258,17 @@ export class ThinkingRoomApp {
     console.info(
       `[ThinkingRoom] Motion sensitivity ${(this.motionSensitivity * 100).toFixed(0)}%`
     );
+    this.showActiveOptions();
+  }
+
+  private showActiveOptions(): void {
+    const items = [
+      `Mikrofon: ${this.options.enableMicrophone ? 'aktiv' : 'deaktiviert'}`,
+      `Kamera: ${this.options.enableWebcam ? 'aktiv' : 'deaktiviert'}`,
+      `Audio-Sensitivität: ${(this.audioSensitivity * 100).toFixed(0)}%`,
+      `Motion-Sensitivität: ${(this.motionSensitivity * 100).toFixed(0)}%`
+    ];
+    this.osd.show(items, 3000);
   }
 
   dispose(): void {
@@ -263,5 +277,6 @@ export class ThinkingRoomApp {
     window.removeEventListener('keydown', this.handleKeyDown);
     this.visualManager.dispose();
     this.renderer.dispose();
+    this.osd.dispose();
   }
 }
