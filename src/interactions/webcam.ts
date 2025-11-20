@@ -11,9 +11,11 @@ export class WebcamMotionController {
       this.video = document.createElement('video');
       this.video.autoplay = true;
       this.video.muted = true;
+      this.video.playsInline = true;
       this.video.style.display = 'none';
       const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
       this.video.srcObject = stream;
+      await this.video.play();
       this.canvas = document.createElement('canvas');
       this.canvas.width = 160;
       this.canvas.height = 120;
@@ -26,6 +28,7 @@ export class WebcamMotionController {
 
   getMotion(): number {
     if (!this.enabled || !this.ctx || !this.video) return 0;
+    if (this.video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return 0;
     this.ctx.drawImage(this.video, 0, 0, this.canvas!.width, this.canvas!.height);
     const frame = this.ctx.getImageData(0, 0, this.canvas!.width, this.canvas!.height);
     if (!this.prevFrame) {
@@ -43,5 +46,9 @@ export class WebcamMotionController {
 
   getVideoElement(): HTMLVideoElement | undefined {
     return this.video;
+  }
+
+  hasFrame(): boolean {
+    return Boolean(this.video && this.video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA);
   }
 }

@@ -34,6 +34,7 @@ export class ThinkingRoomApp {
   private mic = new MicrophoneController();
   private webcam = new WebcamMotionController();
   private webcamTexture?: THREE.VideoTexture;
+  private hasWebcamFrame = false;
   private fpsSamples: number[] = [];
   private options: ThinkingRoomOptions;
   private handleResize = () => this.onResize();
@@ -102,6 +103,8 @@ export class ThinkingRoomApp {
       this.elapsed += delta;
       const audioLevel = this.options.enableMicrophone ? this.getScaledAudioLevel() : 0;
       const motionLevel = this.options.enableWebcam ? this.getScaledMotionLevel() : 0;
+
+      this.updateWebcamTexture();
 
       this.updateTheme(this.elapsed, delta, audioLevel, motionLevel);
       this.visualManager.update(delta, this.elapsed);
@@ -287,6 +290,21 @@ export class ThinkingRoomApp {
   private getScaledMotionLevel(): number {
     const level = this.webcam.getMotion() * this.motionSensitivity;
     return THREE.MathUtils.clamp(level, 0, 1);
+  }
+
+  private updateWebcamTexture(): void {
+    if (!this.webcamTexture || !this.options.enableWebcam) return;
+
+    const hasFrame = this.webcam.hasFrame();
+    this.hasWebcamFrame = hasFrame || this.hasWebcamFrame;
+
+    if (hasFrame) {
+      this.webcamTexture.needsUpdate = true;
+    }
+
+    const videoActive = this.hasWebcamFrame && !this.isPaused;
+    this.sensorImprint.setVideoTexture(videoActive ? this.webcamTexture : undefined);
+    this.occlusionMask.setVideoTexture(videoActive ? this.webcamTexture : undefined);
   }
 
   private adjustAudioSensitivity(delta: number): void {
