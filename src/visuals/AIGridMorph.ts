@@ -16,8 +16,8 @@ export class AIGridMorph implements VisualModule {
       uniforms: {
         time: { value: 0 },
         intensity: { value: 0.5 },
-        colorA: { value: new THREE.Color('#83a4d4') },
-        colorB: { value: new THREE.Color('#b6fbff') }
+        colorA: { value: new THREE.Color('#0f2b46') },
+        colorB: { value: new THREE.Color('#6fffd3') }
       },
       vertexShader: /* glsl */ `
         uniform float time;

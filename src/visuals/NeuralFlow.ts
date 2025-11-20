@@ -20,11 +20,14 @@ export class NeuralFlow implements VisualModule {
   private audioLevel = 0;
   private motionLevel = 0;
   private colorHelper = new THREE.Color();
+  private readonly brandCool = new THREE.Color('#19f2ff');
+  private readonly brandWarm = new THREE.Color('#f6ad3c');
+  private readonly haloTint = new THREE.Color('#f4f6fb');
 
   constructor(maxPoints = 2000) {
     this.segments = Math.max(24, Math.floor(maxPoints / 40));
     this.material = new THREE.LineBasicMaterial({
-      color: new THREE.Color('#76d5ff'),
+      color: this.brandCool.clone(),
       transparent: true,
       opacity: 0.55,
       vertexColors: true,
@@ -32,7 +35,7 @@ export class NeuralFlow implements VisualModule {
       depthWrite: false
     });
     this.haloMaterial = new THREE.LineBasicMaterial({
-      color: new THREE.Color('#ffffff'),
+      color: this.haloTint.clone(),
       transparent: true,
       opacity: 0.2,
       blending: THREE.AdditiveBlending,
@@ -85,9 +88,11 @@ export class NeuralFlow implements VisualModule {
           Math.cos(t * Math.PI * 2 + phase) * (0.3 + this.motionLevel * 0.7);
         ribbon.positions[idx + 2] = Math.sin(angle) * radius * audioPulse;
 
-        const hue = 0.52 + 0.08 * Math.sin(angle + index * 0.5);
-        const lightness = 0.45 + 0.3 * (t + this.audioLevel * 0.5);
-        this.colorHelper.setHSL(hue, 0.8, THREE.MathUtils.clamp(lightness, 0, 1));
+        const accentMix = THREE.MathUtils.clamp(0.2 + t * 0.6 + 0.2 * Math.sin(angle + index * 0.5), 0, 1);
+        this.colorHelper
+          .copy(this.brandCool)
+          .lerp(this.brandWarm, accentMix)
+          .lerp(this.haloTint, this.audioLevel * 0.2);
         ribbon.colors[idx] = this.colorHelper.r;
         ribbon.colors[idx + 1] = this.colorHelper.g;
         ribbon.colors[idx + 2] = this.colorHelper.b;

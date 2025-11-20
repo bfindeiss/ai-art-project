@@ -1,16 +1,16 @@
 {
   "palettes": [
     {
-      "name": "Deep Thought",
-      "colors": ["#0b0f1f", "#243b55", "#141e30", "#00c6ff"]
+      "name": "Devland Midnight",
+      "colors": ["#051225", "#0f2b46", "#19f2ff", "#6fffd3"]
     },
     {
-      "name": "Neural Dawn",
-      "colors": ["#2c003e", "#512b58", "#7f5a83", "#feb47b"]
+      "name": "Devland Horizon",
+      "colors": ["#06172c", "#123c5b", "#16d7f0", "#f6ad3c"]
     },
     {
-      "name": "Signal Bloom",
-      "colors": ["#051937", "#004d7a", "#008793", "#00bf72", "#a8eb12"]
+      "name": "Devland Pulse",
+      "colors": ["#050e19", "#102b3d", "#4f7bff", "#19f2ff", "#f4f6fb"]
     }
   ],
   "transitionSeconds": 90

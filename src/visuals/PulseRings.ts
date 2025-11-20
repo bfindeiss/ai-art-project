@@ -8,12 +8,15 @@ export class PulseRings implements VisualModule {
   private audioLevel = 0;
   private motionLevel = 0;
   private ringCount: number;
+  private readonly baseColor = new THREE.Color('#19f2ff');
+  private readonly accentColor = new THREE.Color('#f6ad3c');
+  private readonly colorHelper = new THREE.Color();
 
   constructor(ringCount = 18) {
     this.ringCount = ringCount;
     const geometry = new THREE.TorusGeometry(1, 0.02, 8, 90);
     const material = new THREE.MeshBasicMaterial({
-      color: new THREE.Color('#9efcff'),
+      color: this.baseColor.clone(),
       transparent: true,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
@@ -47,7 +50,9 @@ export class PulseRings implements VisualModule {
 
     const material = this.instanced.material as THREE.MeshBasicMaterial;
     material.opacity = THREE.MathUtils.lerp(0.35, 0.95, this.audioLevel);
-    material.color.setHSL(0.52 + this.audioLevel * 0.1, 0.9, 0.65 + this.motionLevel * 0.2);
+    const blend = THREE.MathUtils.clamp(0.1 + this.audioLevel * 0.6 + this.motionLevel * 0.4, 0, 1);
+    this.colorHelper.copy(this.baseColor).lerp(this.accentColor, blend);
+    material.color.copy(this.colorHelper);
     this.object3d.rotation.y += delta * (0.2 + this.motionLevel * 0.6);
   }
 

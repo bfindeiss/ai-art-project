@@ -13,6 +13,10 @@ export class SynapseParticles implements VisualModule {
     const positions = new Float32Array(count * 3);
     this.velocities = new Float32Array(count);
     const colors = new Float32Array(count * 3);
+    const cool = new THREE.Color('#19f2ff');
+    const warm = new THREE.Color('#f6ad3c');
+    const highlight = new THREE.Color('#f4f6fb');
+    const tempColor = new THREE.Color();
 
     for (let i = 0; i < count; i++) {
       positions[i * 3] = THREE.MathUtils.randFloatSpread(8);
@@ -20,8 +24,14 @@ export class SynapseParticles implements VisualModule {
       positions[i * 3 + 2] = THREE.MathUtils.randFloatSpread(8);
       this.velocities[i] = THREE.MathUtils.randFloat(0.002, 0.015);
 
-      const color = new THREE.Color().setHSL(0.55 + Math.random() * 0.1, 0.6, 0.7);
-      colors.set([color.r, color.g, color.b], i * 3);
+      const mix = Math.pow(Math.random(), 1.4) * 0.75;
+      tempColor
+        .copy(cool)
+        .lerp(warm, mix)
+        .lerp(highlight, Math.random() * 0.15);
+      colors[i * 3] = tempColor.r;
+      colors[i * 3 + 1] = tempColor.g;
+      colors[i * 3 + 2] = tempColor.b;
     }
 
     this.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));

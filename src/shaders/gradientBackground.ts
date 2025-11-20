@@ -10,9 +10,9 @@ export function createGradientBackground(radius = 50): THREE.Mesh {
     fragmentShader: gradientFragment,
     side: THREE.BackSide,
     uniforms: {
-      colorA: { value: new THREE.Color('#0b0f1f') },
-      colorB: { value: new THREE.Color('#243b55') },
-      colorC: { value: new THREE.Color('#00c6ff') },
+      colorA: { value: new THREE.Color('#051225') },
+      colorB: { value: new THREE.Color('#0f2b46') },
+      colorC: { value: new THREE.Color('#19f2ff') },
       time: { value: 0 }
     }
   });
