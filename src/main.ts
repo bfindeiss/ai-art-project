@@ -7,8 +7,8 @@ document.body.style.overflow = 'hidden';
 document.body.appendChild(container);
 
 const app = new ThinkingRoomApp(container, {
-  enableMicrophone: true,
-  enableWebcam: true
+  enableMicrophone: false,
+  enableWebcam: false
 });
 app.start();
 
