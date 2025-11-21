@@ -1,13 +1,21 @@
 import * as THREE from 'three';
 import { createGradientBackground } from './shaders/gradientBackground';
 import { VisualManager } from './visuals/visualManager';
-import { projectionConfig, systemConfig, themeConfig } from './config';
+import { playlistConfig, projectionConfig, systemConfig, themeConfig } from './config';
 import { EdgeBlendOverlay } from './edgeBlendOverlay';
 import { MicrophoneController } from './interactions/microphone';
 import { WebcamMotionController } from './interactions/webcam';
 import { SensorImprint } from './visuals/SensorImprint';
 import { PersonOcclusionMask } from './visuals/PersonOcclusionMask';
 import { OnScreenDisplay } from './onScreenDisplay';
+import { PlaylistController, SceneConfig } from './playlistController';
+import { FadeOverlay } from './fadeOverlay';
+import { SceneInfoBanner } from './sceneInfoBanner';
+import { SensorConsentOverlay } from './sensorConsent';
+import { SensorStatusBadge } from './sensorStatus';
+import { VisitorAssetPool } from './visitorAssets';
+import { VisitorUploadPanel } from './visitorUploadPanel';
+import { ControlPanel } from './controlPanel';
 
 interface ThinkingRoomOptions {
   enableMicrophone?: boolean;
@@ -44,6 +52,24 @@ export class ThinkingRoomApp {
   private motionSensitivity = 1;
   private readonly sensitivityStep = 0.1;
   private osd = new OnScreenDisplay();
+  private playlist = new PlaylistController(playlistConfig);
+  private fadeOverlay = new FadeOverlay();
+  private infoBanner = new SceneInfoBanner();
+  private sensorConsent?: SensorConsentOverlay;
+  private sensorStatus = new SensorStatusBadge();
+  private visitorAssets = new VisitorAssetPool();
+  private uploadPanel = new VisitorUploadPanel(this.visitorAssets);
+  private controlPanel = new ControlPanel({
+    onNext: () => this.handleManualNext(),
+    onPrevious: () => this.handleManualPrevious(),
+    onTogglePause: () => this.togglePause(),
+    onSensitivityChange: (type, delta) =>
+      type === 'audio' ? this.adjustAudioSensitivity(delta) : this.adjustMotionSensitivity(delta),
+    onSyncPlaylist: () => this.restartPlaylist()
+  });
+  private pendingScene?: SceneConfig;
+  private micEnabled = false;
+  private webcamEnabled = false;
 
   constructor(container: HTMLElement, options: ThinkingRoomOptions = {}) {
     this.container = container;
@@ -64,35 +90,64 @@ export class ThinkingRoomApp {
     this.edgeOverlay = new EdgeBlendOverlay(useEdgeBlend);
     this.overlayScene.add(this.occlusionMask.object3d);
     this.overlayScene.add(this.edgeOverlay.object3d);
+    this.overlayScene.add(this.fadeOverlay.object3d);
 
     this.scene.add(this.background);
     this.scene.add(this.sensorImprint.object3d);
-    this.visualManager = new VisualManager(this.scene);
+    this.visualManager = new VisualManager(this.scene, this.visitorAssets);
     this.visualManager.init(systemConfig.maxParticles);
 
     window.addEventListener('resize', this.handleResize);
     window.addEventListener('keydown', this.handleKeyDown);
     this.onResize();
 
-    if (options.enableMicrophone) {
-      this.mic.init();
-    }
-    if (options.enableWebcam) {
-      this.webcam.init().then(() => {
-        const videoEl = this.webcam.getVideoElement();
-        if (videoEl) {
-          this.webcamTexture = new THREE.VideoTexture(videoEl);
-          this.webcamTexture.colorSpace = THREE.SRGBColorSpace;
-          this.sensorImprint.setVideoTexture(this.webcamTexture);
-          this.occlusionMask.setVideoTexture(this.webcamTexture);
-        }
-      });
-    }
+    this.playlist.onSceneChange = (scene) => this.queueScene(scene);
+    this.sensorStatus.update({ microphone: false, webcam: false });
+    this.showConsent();
   }
 
   start(): void {
     this.clock.start();
+    this.playlist.start();
     this.animate();
+  }
+
+  private showConsent(): void {
+    this.sensorConsent = new SensorConsentOverlay({
+      onConfirm: (opts) => {
+        if (opts.microphone) {
+          this.enableMicrophone();
+        }
+        if (opts.webcam) {
+          this.enableWebcam();
+        }
+        this.sensorStatus.update({ microphone: this.micEnabled, webcam: this.webcamEnabled });
+        this.queueScene(this.playlist.getActiveScene() ?? { module: 'NeuralFlow', duration: 0 });
+      }
+    });
+  }
+
+  private enableMicrophone(): void {
+    if (this.micEnabled) return;
+    this.mic.init();
+    this.options.enableMicrophone = true;
+    this.micEnabled = true;
+  }
+
+  private enableWebcam(): void {
+    if (this.webcamEnabled) return;
+    this.webcam.init().then(() => {
+      const videoEl = this.webcam.getVideoElement();
+      if (videoEl) {
+        this.webcamTexture = new THREE.VideoTexture(videoEl);
+        this.webcamTexture.colorSpace = THREE.SRGBColorSpace;
+        this.sensorImprint.setVideoTexture(this.webcamTexture);
+        this.occlusionMask.setVideoTexture(this.webcamTexture);
+        this.webcamEnabled = true;
+        this.options.enableWebcam = true;
+        this.sensorStatus.update({ microphone: this.micEnabled, webcam: this.webcamEnabled });
+      }
+    });
   }
 
   private animate = () => {
@@ -119,10 +174,13 @@ export class ThinkingRoomApp {
         this.occlusionMask.update(this.elapsed);
       }
 
-      this.trackFps(delta);
-
       this.sensorImprint.update(delta, this.elapsed);
+      this.trackFps(delta);
+      this.playlist.update(delta, this.isPaused);
     }
+
+    this.fadeOverlay.update(delta);
+    this.applyPendingSceneIfReady();
 
     this.renderer.clear();
     this.renderer.render(this.scene, this.camera);
@@ -229,11 +287,10 @@ export class ThinkingRoomApp {
       case 'KeyV':
         event.preventDefault();
         if (event.shiftKey) {
-          this.visualManager.previousModule();
+          this.handleManualPrevious();
         } else {
-          this.visualManager.nextModule();
+          this.handleManualNext();
         }
-        this.announceActiveVisual();
         break;
       case 'ArrowUp':
         event.preventDefault();
@@ -258,8 +315,8 @@ export class ThinkingRoomApp {
             const index = digit - 1;
             if (index >= 0 && index < this.visualManager.getModuleNames().length) {
               event.preventDefault();
-              this.visualManager.selectModule(index);
-              this.announceActiveVisual();
+              const name = this.visualManager.getModuleNames()[index];
+              this.queueScene({ module: name, duration: 0, title: name });
               break;
             }
           }
@@ -275,11 +332,39 @@ export class ThinkingRoomApp {
     }
   }
 
-  private announceActiveVisual(): void {
-    const active = this.visualManager.getActiveModuleName();
-    if (active) {
-      console.info(`[ThinkingRoom] Active visual module: ${active}`);
+  private handleManualNext(): void {
+    this.playlist.next();
+  }
+
+  private handleManualPrevious(): void {
+    this.playlist.previous();
+  }
+
+  private restartPlaylist(): void {
+    this.playlist.start();
+  }
+
+  private queueScene(scene: SceneConfig): void {
+    this.pendingScene = scene;
+    this.fadeOverlay.fadeIn();
+  }
+
+  private applyPendingSceneIfReady(): void {
+    if (!this.pendingScene) return;
+    if (!this.fadeOverlay.isOpaque()) return;
+
+    const names = this.visualManager.getModuleNames();
+    const targetIndex = names.indexOf(this.pendingScene.module);
+    if (targetIndex >= 0) {
+      this.visualManager.selectModule(targetIndex);
+      this.infoBanner.show(this.pendingScene);
+      this.osd.show([
+        this.pendingScene.title ?? this.pendingScene.module,
+        this.pendingScene.description ?? ''
+      ]);
     }
+    this.pendingScene = undefined;
+    this.fadeOverlay.fadeOut();
   }
 
   private getScaledAudioLevel(): number {
@@ -340,5 +425,9 @@ export class ThinkingRoomApp {
     this.visualManager.dispose();
     this.renderer.dispose();
     this.osd.dispose();
+    this.infoBanner.dispose();
+    this.sensorStatus.dispose();
+    this.uploadPanel.dispose();
+    this.controlPanel.dispose();
   }
 }

@@ -1,0 +1,26 @@
+[
+  {
+    "module": "NeuralFlow",
+    "duration": 28,
+    "title": "Algorithmen in Bewegung",
+    "description": "Fließende neuronale Felder reagieren sanft auf Klang und Bewegung."
+  },
+  {
+    "module": "BloomGarden",
+    "duration": 34,
+    "title": "In Vitro Pixel Flowers",
+    "description": "Hochgeladene Besucher*innen-Blüten treiben als schwebende Hologramme."
+  },
+  {
+    "module": "AIGridMorph",
+    "duration": 30,
+    "title": "Künstliche Geometrien",
+    "description": "Morphende KI-Gitter zitieren digitale Stadt- und Naturstrukturen."
+  },
+  {
+    "module": "AuroraVeil",
+    "duration": 32,
+    "title": "Polarlicht der Daten",
+    "description": "Schimmernde Atmosphären verknüpfen kosmische und biologische Muster."
+  }
+]

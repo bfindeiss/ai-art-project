@@ -6,6 +6,8 @@ import { AIGridMorph } from './AIGridMorph';
 import { PulseRings } from './PulseRings';
 import { AuroraVeil } from './AuroraVeil';
 import { SensorSpectrum } from './SensorSpectrum';
+import { BloomGarden } from './BloomGarden';
+import { VisitorAssetPool } from '../visitorAssets';
 
 interface ManagedVisual {
   name: string;
@@ -17,7 +19,7 @@ export class VisualManager {
   private group = new THREE.Group();
   private activeIndex = 0;
 
-  constructor(private scene: THREE.Scene) {}
+  constructor(private scene: THREE.Scene, private visitorAssets: VisitorAssetPool) {}
 
   init(maxParticles: number): void {
     this.modules = [
@@ -26,7 +28,8 @@ export class VisualManager {
       { name: 'AIGridMorph', module: new AIGridMorph() },
       { name: 'PulseRings', module: new PulseRings() },
       { name: 'AuroraVeil', module: new AuroraVeil() },
-      { name: 'SensorSpectrum', module: new SensorSpectrum() }
+      { name: 'SensorSpectrum', module: new SensorSpectrum() },
+      { name: 'BloomGarden', module: new BloomGarden(this.visitorAssets) }
     ];
 
     this.modules.forEach(({ module }) => {
